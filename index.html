@@ -269,7 +269,7 @@ async function host(AP) {
     await new Promise(res => {
       const go = () => { const el = document.getElementById("pin"); if (el.value.trim() === HOST_PIN) { sessionStorage.setItem("kuiz-host", HOST_PIN); document.getElementById("go").textContent = "Menyambung…"; res(); } else { el.value = ""; el.placeholder = "PIN salah — cuba lagi"; } };
       document.getElementById("go").onclick = go;
-      document.getElementById("pin").onkeydown = e => e.key === "Enter" && go();
+      document.getElementById("pin").onkeydown = e => { if (e.key === "Enter") go(); };
     });
   }
   let A;
@@ -420,7 +420,7 @@ async function player(AP) {
     app.innerHTML = `${banner}<div class="p-wrap"><div class="p-center"><p class="eyebrow">${esc(SUBTITLE)}</p>
       <h1 class="disp" style="font-size:52px">${esc(TITLE.split(" ")[0])} <span class="gold">${esc(TITLE.split(" ").slice(1).join(" "))}</span></h1>
       <input id="code" inputmode="numeric" maxlength="6" placeholder="Kod permainan"><button class="btn" id="go" style="width:100%">Seterusnya</button></div></div>`;
-    await new Promise(res => { const go = () => { const v = document.getElementById("code").value.trim(); if (v) { g = v; res(); } }; document.getElementById("go").onclick = go; document.getElementById("code").onkeydown = e => e.key === "Enter" && go(); });
+    await new Promise(res => { const go = () => { const v = document.getElementById("code").value.trim(); if (v) { g = v; res(); } }; document.getElementById("go").onclick = go; document.getElementById("code").onkeydown = e => { if (e.key === "Enter") go(); }; });
     history.replaceState(null, "", `?g=${g}${params.has("demo") ? "&demo" : ""}`);
   }
   let A;
@@ -454,7 +454,7 @@ async function player(AP) {
         for (let i = 0; i < 5; i++) { try { await A.addPlayer(g, pid, { name, joined: Date.now() }); break; } catch (e) { await sleep(600 * (i + 1) + Math.random() * 600); } }
         localStorage.setItem(KP + "pid", pid); localStorage.setItem(KP + "name", name); res();
       };
-      document.getElementById("go").onclick = go; document.getElementById("nm").onkeydown = e => e.key === "Enter" && go();
+      document.getElementById("go").onclick = go; document.getElementById("nm").onkeydown = e => { if (e.key === "Enter") go(); };
     });
   }
   try { await navigator.wakeLock?.request("screen"); } catch (e) {}
