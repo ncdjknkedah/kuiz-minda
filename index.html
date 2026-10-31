@@ -115,6 +115,22 @@ const app = document.getElementById("app");
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const N = QUESTIONS.length;
+function explain(e) {
+  const c = String(e?.code || e?.message || e);
+  if (c.includes("permission-denied")) return "Akses ditolak oleh Firestore. Semak tab <b>Rules</b> → tampal peraturan dari panduan → <b>Publish</b>.";
+  if (c.includes("not-found") || c.includes("NOT_FOUND")) return "Pangkalan data Firestore belum dicipta. Firebase → Firestore → <b>Create database</b>.";
+  if (c.includes("unavailable") || c.includes("offline") || c.includes("timeout")) return "Tidak dapat menghubungi Firestore. Semak internet, dan pastikan Firestore sudah dicipta.";
+  if (c.includes("Failed to fetch") || c.includes("import")) return "Gagal memuatkan Firebase. Semak sambungan internet.";
+  return esc(c);
+}
+function showError(e, where) {
+  console.error(where, e);
+  app.innerHTML = `<div class="p-wrap"><div class="p-center"><div class="big-ic" style="background:rgba(255,77,94,.2);color:var(--red)">!</div>
+    <h2 class="disp" style="font-size:36px">Tidak dapat menyambung</h2><p style="color:var(--soft);line-height:1.5">${explain(e)}</p>
+    <p style="font-size:12px;color:var(--soft);opacity:.6">${esc(where)}: ${esc(e?.code || e?.message || e)}</p>
+    <button class="btn" onclick="location.reload()">Cuba semula</button></div></div>`;
+}
+const withTimeout = (p, ms = 12000) => Promise.race([p, new Promise((_, r) => setTimeout(() => r(new Error("timeout")), ms))]);
 
 /* ---------- storage adapters ---------- */
 async function firebaseAdapter() {
@@ -125,7 +141,7 @@ async function firebaseAdapter() {
   return {
     async getGame(g) { const s = await fs.getDoc(fs.doc(db, "games", g)); return s.exists() ? s.data() : null; },
     setGame: (g, d) => fs.setDoc(fs.doc(db, "games", g), d, { merge: true }),
-    watchGame: (g, cb) => fs.onSnapshot(fs.doc(db, "games", g), s => cb(s.exists() ? s.data() : null), e => console.error(e)),
+    watchGame: (g, cb) => fs.onSnapshot(fs.doc(db, "games", g), s => cb(s.exists() ? s.data() : null), e => showError(e, "watchGame")),
     addPlayer: (g, id, d) => fs.setDoc(fs.doc(db, "games", g, "players", id), d, { merge: true }),
     watchPlayers: (g, cb) => fs.onSnapshot(fs.collection(db, "games", g, "players"), s => cb(list(s)), e => console.error(e)),
     addAnswer: (g, id, d) => fs.setDoc(fs.doc(db, "games", g, "answers", id), d),
@@ -246,19 +262,23 @@ const Music = (() => {
 /* ======================================================================
    HOST
    ====================================================================== */
-async function host(A) {
+async function host(AP) {
   if (sessionStorage.getItem("kuiz-host") !== HOST_PIN) {
     app.innerHTML = `<div class="p-wrap"><div class="p-center"><p class="eyebrow">Skrin hos</p><h1 class="disp gold" style="font-size:56px">${esc(TITLE)}</h1>
       <input id="pin" type="password" inputmode="numeric" placeholder="PIN hos"><button class="btn" id="go">Masuk</button></div></div>`;
     await new Promise(res => {
-      const go = () => { if (document.getElementById("pin").value === HOST_PIN) { sessionStorage.setItem("kuiz-host", HOST_PIN); res(); } else document.getElementById("pin").value = ""; };
+      const go = () => { const el = document.getElementById("pin"); if (el.value.trim() === HOST_PIN) { sessionStorage.setItem("kuiz-host", HOST_PIN); document.getElementById("go").textContent = "Menyambung…"; res(); } else { el.value = ""; el.placeholder = "PIN salah — cuba lagi"; } };
       document.getElementById("go").onclick = go;
       document.getElementById("pin").onkeydown = e => e.key === "Enter" && go();
     });
   }
+  let A;
+  try { A = await AP; } catch (e) { return showError(e, "muat Firebase"); }
   let g = params.get("g");
   if (!g) { g = String(Math.floor(1000 + Math.random() * 9000)); history.replaceState(null, "", `?host&g=${g}${DEMO && params.has("demo") ? "&demo" : ""}`); }
-  if (!(await A.getGame(g))) await A.setGame(g, { state: "lobby", q: -1, created: Date.now() });
+  try {
+    if (!(await withTimeout(A.getGame(g)))) await withTimeout(A.setGame(g, { state: "lobby", q: -1, created: Date.now() }));
+  } catch (e) { return showError(e, "hos"); }
 
   const base = location.origin + location.pathname;
   const joinUrl = `${base}?g=${g}${params.has("demo") ? "&demo" : ""}`;
@@ -393,7 +413,7 @@ async function host(A) {
 /* ======================================================================
    PLAYER
    ====================================================================== */
-async function player(A) {
+async function player(AP) {
   const banner = DEMO ? `<div class="banner">MOD DEMO</div>` : "";
   let g = params.get("g");
   if (!g) {
@@ -403,6 +423,8 @@ async function player(A) {
     await new Promise(res => { const go = () => { const v = document.getElementById("code").value.trim(); if (v) { g = v; res(); } }; document.getElementById("go").onclick = go; document.getElementById("code").onkeydown = e => e.key === "Enter" && go(); });
     history.replaceState(null, "", `?g=${g}${params.has("demo") ? "&demo" : ""}`);
   }
+  let A;
+  try { A = await AP; } catch (e) { return showError(e, "muat Firebase"); }
   const KP = `kuiz:${g}:${params.get("slot") || ""}`;
   let pid = localStorage.getItem(KP + "pid"), name = localStorage.getItem(KP + "name");
   const ans = JSON.parse(localStorage.getItem(KP + "ans") || "{}");
@@ -410,7 +432,9 @@ async function player(A) {
   const saveAns = () => localStorage.setItem(KP + "ans", JSON.stringify(ans));
   const total = () => Object.values(ans).reduce((s, a) => s + (a.points || 0), 0);
 
-  if (!(await A.getGame(g))) {
+  let exists;
+  try { exists = await withTimeout(A.getGame(g)); } catch (e) { return showError(e, "peserta"); }
+  if (!exists) {
     app.innerHTML = `${banner}<div class="p-wrap"><div class="p-center"><div class="big-ic" style="background:rgba(255,77,94,.2);color:var(--red)">!</div>
       <h2 class="disp" style="font-size:40px">Kod tidak dijumpai</h2><p style="color:var(--soft)">Semak kod ${esc(g)} pada skrin.</p>
       <button class="btn" onclick="location.href=location.pathname">Cuba lagi</button></div></div>`;
@@ -486,12 +510,9 @@ async function player(A) {
 }
 
 /* ---------- boot ---------- */
-(async () => {
-  let A;
-  try { A = DEMO ? localAdapter() : await firebaseAdapter(); }
-  catch (e) { app.innerHTML = `<div class="p-wrap"><div class="p-center"><h2 class="disp" style="font-size:36px">Gagal menyambung</h2><p style="color:var(--soft)">Semak sambungan internet dan cuba semula.</p><button class="btn" onclick="location.reload()">Muat semula</button></div></div>`; console.error(e); return; }
-  IS_HOST ? host(A) : player(A);
-})();
+const AP = DEMO ? Promise.resolve(localAdapter()) : withTimeout(firebaseAdapter(), 20000);
+AP.catch(() => {});
+IS_HOST ? host(AP) : player(AP);
 </script>
 </body>
 </html>
