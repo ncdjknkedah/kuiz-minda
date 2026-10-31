@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Kuiz Minda — Mitos vs Fakta</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,700;0,800;1,800&family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+<style>
+:root{--ink:#090D26;--navy:#161B4C;--light:#F4F5FB;--soft:#C3CAE8;--gold:#FFC23D;--teal:#3FE0D0;--orange:#FF8A3D;--red:#FF4D5E;--green:#3DDC84}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:'Plus Jakarta Sans',Arial,sans-serif;color:var(--light);background:radial-gradient(ellipse at 85% 10%,#3A2A86 0%,#161B4C 45%,#090D26 100%) fixed;min-height:100%;-webkit-tap-highlight-color:transparent}
+.disp{font-family:'Barlow Condensed','Arial Narrow',sans-serif;font-style:italic;font-weight:800;text-transform:uppercase;line-height:.95}
+.gold{background:linear-gradient(180deg,#FFF1BF 0%,#FFC23D 50%,#F08C00 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.eyebrow{font-weight:800;letter-spacing:.3em;text-transform:uppercase;color:var(--teal);font-size:14px}
+.spec{position:fixed;left:0;right:0;bottom:0;height:8px;background:linear-gradient(90deg,#3DDC84 0%,#FFD23F 35%,#FF8A3D 68%,#FF4D5E 100%)}
+.card{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);border-radius:22px}
+button{font-family:inherit;cursor:pointer;border:none}
+.btn{background:linear-gradient(180deg,#FFD66E,#FFB21E);color:#1a1300;font-weight:800;border-radius:16px;padding:16px 28px;font-size:20px;box-shadow:0 10px 30px rgba(255,178,30,.3)}
+.btn:active{transform:scale(.97)}
+.btn.ghost{background:rgba(255,255,255,.1);color:var(--light);box-shadow:none;font-size:15px;padding:10px 16px}
+input{font-family:inherit;font-size:22px;padding:16px 18px;border-radius:14px;border:2px solid rgba(255,255,255,.25);background:rgba(0,0,0,.25);color:var(--light);width:100%;outline:none;text-align:center}
+input:focus{border-color:var(--teal)}
+.banner{position:fixed;top:0;left:0;right:0;background:var(--orange);color:#1a0d00;font-weight:800;text-align:center;font-size:13px;padding:4px;z-index:9}
+/* ---------- PLAYER ---------- */
+.p-wrap{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;padding:28px 20px 36px;gap:18px;max-width:560px;margin:0 auto}
+.p-center{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:18px}
+.p-head{display:flex;justify-content:space-between;align-items:center;font-size:14px;color:var(--soft)}
+.p-head b{color:var(--light)}
+.ans{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;border-radius:24px;font-size:56px;color:#0B1230;min-height:150px}
+.ans small{font-family:'Plus Jakarta Sans';font-style:normal;font-size:16px;font-weight:800;letter-spacing:.2em}
+.ans.t{background:linear-gradient(160deg,#6FF0E2,#22B8A8);box-shadow:0 12px 40px rgba(63,224,208,.35)}
+.ans.f{background:linear-gradient(160deg,#FFB27A,#F2702A);box-shadow:0 12px 40px rgba(255,138,61,.35)}
+.ans:active{transform:scale(.97)}
+.big-ic{width:120px;height:120px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:64px;font-weight:800}
+.tbar{height:8px;border-radius:4px;background:rgba(255,255,255,.12);overflow:hidden}
+.tbar i{display:block;height:100%;background:linear-gradient(90deg,var(--teal),var(--gold));transition:width .25s linear}
+.stmt-p{font-size:22px;font-weight:600;line-height:1.35}
+/* ---------- HOST ---------- */
+.h-wrap{height:100vh;display:flex;flex-direction:column;padding:3.2vw 4.5vw 6.5vw;gap:2vw;overflow:hidden}
+.h-top{display:flex;justify-content:space-between;align-items:center}
+.h-top .eyebrow{font-size:1.1vw}
+.h-ctrl{position:fixed;right:1.5vw;bottom:1.8vw;display:flex;gap:10px;z-index:5}
+.h-ctrl .btn{font-size:1.3vw;padding:.9vw 1.8vw}
+.h-ctrl .ghost{font-size:.9vw;padding:.6vw 1vw;opacity:.6}
+.lobby{flex:1;display:grid;grid-template-columns:auto 1fr;gap:4vw;align-items:center}
+.qr{background:#FBFAF5;border-radius:24px;padding:1.2vw;width:24vw;height:24vw}
+.qr svg,.qr img{width:100%;height:100%}
+.names{display:flex;flex-wrap:wrap;gap:.6vw;max-height:22vw;overflow:hidden;align-content:flex-start}
+.names span{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:.4vw 1vw;font-size:1.1vw;font-weight:600;animation:pop .35s ease}
+@keyframes pop{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+.timer{width:9vw;height:9vw;border-radius:50%;border:.5vw solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:5vw;box-shadow:0 0 40px rgba(255,194,61,.4)}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:2vw}
+.opt{border-radius:1.6vw;padding:2vw 2.4vw;display:flex;align-items:center;gap:1.6vw;font-size:4.6vw;color:#0B1230;position:relative;overflow:hidden}
+.opt.t{background:linear-gradient(160deg,#6FF0E2,#22B8A8)}
+.opt.f{background:linear-gradient(160deg,#FFB27A,#F2702A)}
+.opt.dim{opacity:.25;filter:grayscale(.6)}
+.opt .cnt{margin-left:auto;font-size:3.6vw}
+.opt .bar{position:absolute;left:0;bottom:0;height:.8vw;background:rgba(11,18,48,.45)}
+.lb-row{display:grid;grid-template-columns:5vw 1fr auto;align-items:center;gap:1.4vw;padding:1vw 1.6vw;border-radius:1.2vw;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);font-size:1.9vw;font-weight:800;animation:pop .4s ease both}
+.lb-row .r{font-family:'Barlow Condensed';font-style:italic;font-size:2.8vw;color:var(--gold)}
+.podium{display:flex;align-items:flex-end;justify-content:center;gap:2vw;flex:1}
+.pod{display:flex;flex-direction:column;align-items:center;gap:1vw;width:20vw}
+.pod .blk{width:100%;border-radius:1.2vw 1.2vw 0 0;display:flex;align-items:flex-start;justify-content:center;padding-top:1.2vw;font-size:6vw;color:#0B1230}
+.pod .nm{font-size:2vw;font-weight:800;text-align:center;word-break:break-word}
+.pod .sc{font-size:1.4vw;color:var(--soft)}
+.fade{animation:pop .4s ease}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="spec"></div>
+<script type="module">
+/* =====================================================================
+   1) TETAPAN — tampal konfigurasi Firebase anda di bawah
+   ===================================================================== */
+const firebaseConfig = {
+  apiKey: "AIzaSyDAYL-WzECWagSRWoOfe2KUAT4WwU6_Cug",
+  authDomain: "kuiz-minda.firebaseapp.com",
+  projectId: "kuiz-minda",
+  storageBucket: "kuiz-minda.firebasestorage.app",
+  messagingSenderId: "470548794507",
+  appId: "1:470548794507:web:10fb047cdd28b2d2a7988e",
+  measurementId: "G-D3414KFNNK"
+};
+const HOST_PIN = "2026";          // PIN untuk skrin hos
+const QUESTION_TIME = 30;         // saat setiap soalan
+const TITLE = "Kuiz Mitos vs Fakta";
+const SUBTITLE = "Seminar Fiqh Kesihatan Mental 2026";
+
+/* 2) SOALAN — a: true = BETUL (fakta), false = SALAH (mitos) */
+const QUESTIONS = [
+  { t: "Masalah kesihatan mental berlaku kerana lemah iman.", a: false,
+    e: "Penyakit mental melibatkan fungsi otak, genetik dan tekanan hidup. Orang yang kuat beragama juga boleh sakit. Berubat ialah ikhtiar — seiring dengan tawakal." },
+  { t: "Pesakit mental biasanya ganas dan berbahaya.", a: false,
+    e: "Kebanyakan pesakit mental tidak ganas. Mereka lebih berisiko menjadi mangsa buli, ejekan dan diskriminasi." },
+  { t: "Bertanya terus tentang niat bunuh diri boleh menanam idea itu.", a: false,
+    e: "Bertanya dengan tenang dan prihatin membuka pintu untuk bercerita — dan mendapatkan bantuan." },
+  { t: "Penyakit mental boleh dirawat, dan pesakit boleh pulih serta bekerja seperti biasa.", a: true,
+    e: "Dengan rawatan awal dan sokongan, ramai pesakit kembali berfungsi dan produktif." },
+  { t: "Ubat psikiatri menyebabkan ketagihan dan perlu dimakan seumur hidup.", a: false,
+    e: "Kebanyakan ubat psikiatri tidak menyebabkan ketagihan. Tempoh rawatan bergantung pada keadaan, ditentukan bersama doktor. Jangan berhenti sendiri." },
+  { t: "Kanak-kanak dan remaja juga boleh mengalami masalah kesihatan mental.", a: true,
+    e: "1 daripada 6 kanak-kanak di Malaysia mengalami masalah kesihatan mental (NHMS 2023)." }
+];
+
+/* ===================================================================== */
+const FB = "https://www.gstatic.com/firebasejs/10.12.2/";
+const params = new URLSearchParams(location.search);
+const IS_HOST = params.has("host");
+const DEMO = params.has("demo") || !firebaseConfig.apiKey;
+const app = document.getElementById("app");
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const N = QUESTIONS.length;
+
+/* ---------- storage adapters ---------- */
+async function firebaseAdapter() {
+  const { initializeApp } = await import(FB + "firebase-app.js");
+  const fs = await import(FB + "firebase-firestore.js");
+  const db = fs.getFirestore(initializeApp(firebaseConfig));
+  const list = s => s.docs.map(x => ({ id: x.id, ...x.data() }));
+  return {
+    async getGame(g) { const s = await fs.getDoc(fs.doc(db, "games", g)); return s.exists() ? s.data() : null; },
+    setGame: (g, d) => fs.setDoc(fs.doc(db, "games", g), d, { merge: true }),
+    watchGame: (g, cb) => fs.onSnapshot(fs.doc(db, "games", g), s => cb(s.exists() ? s.data() : null), e => console.error(e)),
+    addPlayer: (g, id, d) => fs.setDoc(fs.doc(db, "games", g, "players", id), d, { merge: true }),
+    watchPlayers: (g, cb) => fs.onSnapshot(fs.collection(db, "games", g, "players"), s => cb(list(s)), e => console.error(e)),
+    addAnswer: (g, id, d) => fs.setDoc(fs.doc(db, "games", g, "answers", id), d),
+    watchAnswers: (g, cb) => fs.onSnapshot(fs.collection(db, "games", g, "answers"), s => cb(list(s)), e => console.error(e))
+  };
+}
+function localAdapter() {
+  const bc = new BroadcastChannel("kuiz-demo"), subs = [];
+  const K = k => "kuizdemo:" + k;
+  const read = k => JSON.parse(localStorage.getItem(K(k)) || "null");
+  const fire = k => subs.forEach(s => k === s.key && s.fn());
+  const write = (k, v) => { localStorage.setItem(K(k), JSON.stringify(v)); bc.postMessage(k); fire(k); };
+  bc.onmessage = e => fire(e.data);
+  const sub = (key, fn) => { const s = { key, fn }; subs.push(s); setTimeout(fn, 0); return () => subs.splice(subs.indexOf(s), 1); };
+  const coll = (g, c) => read(`${g}/${c}`) || {};
+  const arr = o => Object.entries(o).map(([id, v]) => ({ id, ...v }));
+  return {
+    async getGame(g) { return read("game/" + g); },
+    async setGame(g, d) { write("game/" + g, { ...(read("game/" + g) || {}), ...d }); },
+    watchGame: (g, cb) => sub("game/" + g, () => cb(read("game/" + g))),
+    async addPlayer(g, id, d) { const c = coll(g, "players"); c[id] = { ...(c[id] || {}), ...d }; write(`${g}/players`, c); },
+    watchPlayers: (g, cb) => sub(`${g}/players`, () => cb(arr(coll(g, "players")))),
+    async addAnswer(g, id, d) { const c = coll(g, "answers"); c[id] = d; write(`${g}/answers`, c); },
+    watchAnswers: (g, cb) => sub(`${g}/answers`, () => cb(arr(coll(g, "answers"))))
+  };
+}
+
+/* ---------- scoring ---------- */
+function scoreTable(players, answers) {
+  const sc = {};
+  players.forEach(p => sc[p.id] = { id: p.id, name: p.name, score: 0, right: 0 });
+  answers.forEach(a => { if (!sc[a.pid]) sc[a.pid] = { id: a.pid, name: a.name, score: 0, right: 0 }; sc[a.pid].score += a.points || 0; if (a.correct) sc[a.pid].right++; });
+  return Object.values(sc).sort((x, y) => y.score - x.score || y.right - x.right || String(x.name).localeCompare(String(y.name)));
+}
+
+/* ======================================================================
+   MUZIK (asli, dijana oleh Web Audio — hanya pada skrin hos)
+   ====================================================================== */
+const Music = (() => {
+  let ctx = null, master = null, timer = null, mode = null, step = 0, nextT = 0, nbuf = null;
+  let muted = localStorage.getItem("kuiz-mute") === "1";
+  const midi = n => 440 * Math.pow(2, (n - 69) / 12);
+  function ensure() {
+    if (!ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return false;
+      ctx = new AC(); master = ctx.createGain(); master.gain.value = muted ? 0 : 0.55; master.connect(ctx.destination);
+      nbuf = ctx.createBuffer(1, ctx.sampleRate * 0.2, ctx.sampleRate); const d = nbuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+    if (ctx.state === "suspended") ctx.resume();
+    return true;
+  }
+  function note(n, t, dur, type = "square", g = 0.06) {
+    const o = ctx.createOscillator(), v = ctx.createGain();
+    o.type = type; o.frequency.value = midi(n);
+    v.gain.setValueAtTime(0.0001, t); v.gain.linearRampToValueAtTime(g, t + 0.01); v.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(v).connect(master); o.start(t); o.stop(t + dur + 0.05);
+  }
+  function hat(t, g = 0.05) {
+    const s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), v = ctx.createGain();
+    s.buffer = nbuf; f.type = "highpass"; f.frequency.value = 7000;
+    v.gain.setValueAtTime(g, t); v.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+    s.connect(f).connect(v).connect(master); s.start(t); s.stop(t + 0.06);
+  }
+  function kick(t) {
+    const o = ctx.createOscillator(), v = ctx.createGain();
+    o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(45, t + 0.12);
+    v.gain.setValueAtTime(0.35, t); v.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+    o.connect(v).connect(master); o.start(t); o.stop(t + 0.2);
+  }
+  // Lobi: ceria & santai (C – Am – F – G), 8th notes @ 120bpm
+  const LOBBY = { dur: 0.25, len: 32, chords: [[60, 64, 67], [57, 60, 64], [53, 57, 60], [55, 59, 62]] };
+  // Soalan: tegang (E minor pulse) 16ths @ 150bpm
+  const QUEST = { dur: 0.1, len: 32, roots: [40, 40, 43, 38] };
+  function playStep(t) {
+    if (mode === "lobby") {
+      const s = step % LOBBY.len, ch = LOBBY.chords[Math.floor(s / 8)];
+      if (s % 8 === 0) note(ch[0] - 24, t, 0.45, "triangle", 0.16);
+      if (s % 8 === 4) note(ch[0] - 12, t, 0.3, "triangle", 0.1);
+      note(ch[s % 3] + 12, t, 0.18, "square", 0.035);
+      if (s % 4 === 2) hat(t, 0.03);
+      if (s % 4 === 0) kick(t);
+    } else if (mode === "question") {
+      const s = step % QUEST.len, r = QUEST.roots[Math.floor(s / 8)];
+      if (s % 2 === 0) note(r, t, 0.09, "sawtooth", 0.07);
+      if (s % 4 === 0) kick(t);
+      hat(t, s % 2 ? 0.02 : 0.035);
+      if (s % 8 === 6) note(r + 31, t, 0.08, "square", 0.03);
+    }
+  }
+  function loop() {
+    if (!ctx || !mode) return;
+    const D = mode === "lobby" ? LOBBY.dur : QUEST.dur;
+    while (nextT < ctx.currentTime + 0.15) { playStep(nextT); nextT += D; step++; }
+  }
+  function seq(notes, type = "square", g = 0.08, gap = 0.11) {
+    if (!ensure()) return; const t0 = ctx.currentTime + 0.05;
+    notes.forEach((n, i) => n && note(n, t0 + i * gap, gap * 2.2, type, g));
+  }
+  return {
+    play(m) {
+      if (mode === m) return; mode = m; clearInterval(timer);
+      if (!m || !ensure()) return;
+      step = 0; nextT = ctx.currentTime + 0.05; timer = setInterval(loop, 25);
+    },
+    stop() { this.play(null); },
+    tick(left) { if (ensure()) note(left <= 3 ? 88 : 84, ctx.currentTime + 0.01, 0.12, "square", 0.08); },
+    timeUp() { seq([76, 72, 67, 60], "sawtooth", 0.07, 0.09); },
+    reveal() { seq([72, 76, 79, 84, 0, 88], "square", 0.07, 0.1); },
+    board() { if (!ensure()) return; kick(ctx.currentTime); seq([67, 0, 72, 0, 76, 79], "triangle", 0.12, 0.12); },
+    fanfare() { seq([67, 72, 76, 79, 0, 76, 79, 84, 84, 84], "square", 0.08, 0.14); },
+    join() { if (ctx && !muted) note(91, ctx.currentTime + 0.01, 0.12, "triangle", 0.05); },
+    unlock() { ensure(); },
+    get muted() { return muted; },
+    toggle() { muted = !muted; localStorage.setItem("kuiz-mute", muted ? "1" : "0"); if (ensure()) master.gain.value = muted ? 0 : 0.55; return muted; }
+  };
+})();
+
+/* ======================================================================
+   HOST
+   ====================================================================== */
+async function host(A) {
+  if (sessionStorage.getItem("kuiz-host") !== HOST_PIN) {
+    app.innerHTML = `<div class="p-wrap"><div class="p-center"><p class="eyebrow">Skrin hos</p><h1 class="disp gold" style="font-size:56px">${esc(TITLE)}</h1>
+      <input id="pin" type="password" inputmode="numeric" placeholder="PIN hos"><button class="btn" id="go">Masuk</button></div></div>`;
+    await new Promise(res => {
+      const go = () => { if (document.getElementById("pin").value === HOST_PIN) { sessionStorage.setItem("kuiz-host", HOST_PIN); res(); } else document.getElementById("pin").value = ""; };
+      document.getElementById("go").onclick = go;
+      document.getElementById("pin").onkeydown = e => e.key === "Enter" && go();
+    });
+  }
+  let g = params.get("g");
+  if (!g) { g = String(Math.floor(1000 + Math.random() * 9000)); history.replaceState(null, "", `?host&g=${g}${DEMO && params.has("demo") ? "&demo" : ""}`); }
+  if (!(await A.getGame(g))) await A.setGame(g, { state: "lobby", q: -1, created: Date.now() });
+
+  const base = location.origin + location.pathname;
+  const joinUrl = `${base}?g=${g}${params.has("demo") ? "&demo" : ""}`;
+  let game = null, players = [], answers = [], tick = null, busy = false;
+
+  const setState = async d => { if (busy) return; busy = true; try { await A.setGame(g, d); } finally { busy = false; } };
+  const qAnswers = q => answers.filter(a => a.q === q);
+  const ranksPayload = () => {
+    const t = scoreTable(players, answers), ranks = {};
+    t.forEach((p, i) => ranks[p.id] = i + 1);
+    return { ranks, total: t.length, top: t.slice(0, 10).map(p => ({ name: p.name, score: p.score })) };
+  };
+  async function next() {
+    if (!game) return;
+    const { state, q } = game;
+    if (state === "lobby") return setState({ state: "question", q: 0, qStart: Date.now() });
+    if (state === "question") return setState({ state: "reveal" });
+    if (state === "reveal") return setState({ state: q >= N - 1 ? "end" : "board", ...ranksPayload() });
+    if (state === "board") return setState({ state: "question", q: q + 1, qStart: Date.now() });
+  }
+  async function newGame() {
+    if (!confirm("Mula permainan baharu dengan kod baharu?")) return;
+    location.href = `${base}?host${params.has("demo") ? "&demo" : ""}`;
+  }
+  document.addEventListener("pointerdown", () => Music.unlock());
+  document.addEventListener("keydown", e => {
+    Music.unlock();
+    if (e.key === "m" || e.key === "M") { Music.toggle(); const b = document.getElementById("mu"); if (b) b.textContent = Music.muted ? "🔇 Muzik" : "🔊 Muzik"; return; }
+    if ([" ", "ArrowRight", "Enter", "PageDown"].includes(e.key)) { e.preventDefault(); next(); }
+  });
+  let lastKey = null, lastLeft = null;
+  function sound() {
+    const key = game.state + ":" + game.q; if (key === lastKey) return;
+    const prev = lastKey; lastKey = key;
+    if (game.state === "lobby") Music.play("lobby");
+    else if (game.state === "question") { lastLeft = null; Music.play("question"); }
+    else if (game.state === "reveal") { Music.stop(); if (prev) Music.reveal(); }
+    else if (game.state === "board") { Music.stop(); if (prev) Music.board(); }
+    else if (game.state === "end") { Music.stop(); if (prev) { Music.fanfare(); setTimeout(() => game.state === "end" && Music.play("lobby"), 2600); } }
+  }
+
+  function render() {
+    if (!game) return;
+    clearInterval(tick);
+    sound();
+    const { state, q } = game, Q = QUESTIONS[q];
+    const top = `<div class="h-top"><p class="eyebrow">${esc(SUBTITLE)}</p><p class="eyebrow" style="color:var(--soft)">KOD: <span style="color:var(--gold)">${g}</span> · ${players.length} peserta</p></div>`;
+    let body = "", label = "Seterusnya ▶";
+    if (state === "lobby") {
+      label = "Mula kuiz ▶";
+      const recent = players.slice().sort((a, b) => (b.joined || 0) - (a.joined || 0)).slice(0, 80);
+      body = `<div class="lobby">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:1vw"><div class="qr" id="qr"></div>
+          <p style="font-size:1.1vw;color:var(--soft);max-width:24vw;text-align:center;word-break:break-all">${esc(joinUrl)}</p></div>
+        <div style="display:flex;flex-direction:column;gap:1.4vw">
+          <p class="eyebrow" style="font-size:1.2vw">Imbas kod QR untuk sertai</p>
+          <h1 class="disp" style="font-size:6.5vw">${esc(TITLE.split(" ")[0])} <span class="gold">${esc(TITLE.split(" ").slice(1).join(" "))}</span></h1>
+          <div style="display:flex;gap:3vw;align-items:flex-end">
+            <div><p style="font-size:1.1vw;color:var(--soft);font-weight:800;letter-spacing:.2em">KOD PERMAINAN</p><p class="disp gold" style="font-size:7vw">${g}</p></div>
+            <div><p style="font-size:1.1vw;color:var(--soft);font-weight:800;letter-spacing:.2em">PESERTA</p><p class="disp" style="font-size:7vw;color:var(--teal)">${players.length}</p></div>
+          </div>
+          <div class="names">${recent.map(p => `<span>${esc(p.name)}</span>`).join("")}</div>
+        </div></div>`;
+    } else if (state === "question") {
+      label = "Tamat masa ▶";
+      const n = qAnswers(q).length;
+      body = `<div style="display:flex;justify-content:space-between;align-items:center;gap:3vw">
+          <div style="display:flex;flex-direction:column;gap:1.2vw;flex:1"><p class="eyebrow" style="font-size:1.3vw">Kenyataan ${q + 1} / ${N} · Betul atau salah?</p>
+          <h1 class="disp" style="font-size:4.6vw;line-height:1.02">“${esc(Q.t)}”</h1></div>
+          <div class="timer disp" id="tm">${QUESTION_TIME}</div></div>
+        <div style="flex:1"></div>
+        <p style="font-size:1.6vw;font-weight:800;color:var(--soft)"><span style="color:var(--gold)" id="na">${n}</span> / ${players.length} telah menjawab</p>
+        <div class="opts"><div class="opt t disp">✔ Betul</div><div class="opt f disp">✘ Salah</div></div>`;
+    } else if (state === "reveal") {
+      label = q >= N - 1 ? "Keputusan akhir ▶" : "Kedudukan ▶";
+      const qa = qAnswers(q), nt = qa.filter(a => a.choice === true).length, nf = qa.filter(a => a.choice === false).length, tot = Math.max(1, qa.length);
+      const pc = Math.round(100 * qa.filter(a => a.correct).length / tot);
+      body = `<div style="display:flex;flex-direction:column;gap:1vw"><p class="eyebrow" style="font-size:1.3vw">Kenyataan ${q + 1} / ${N}</p>
+          <h1 class="disp" style="font-size:3.4vw;line-height:1.02">“${esc(Q.t)}”</h1></div>
+        <div class="card fade" style="padding:1.8vw 2.4vw;display:flex;gap:2.4vw;align-items:center;border-color:${Q.a ? "var(--teal)" : "var(--orange)"}">
+          <p class="disp" style="font-size:5vw;white-space:nowrap;color:${Q.a ? "var(--teal)" : "var(--orange)"}">${Q.a ? "Betul · fakta" : "Salah · mitos"}</p>
+          <p style="font-size:1.6vw;line-height:1.45">${esc(Q.e)}</p></div>
+        <div style="flex:1"></div>
+        <p style="font-size:1.6vw;font-weight:800;color:var(--soft)"><span style="color:var(--gold)">${pc}%</span> peserta menjawab dengan tepat</p>
+        <div class="opts">
+          <div class="opt t disp ${Q.a ? "" : "dim"}">✔ Betul<span class="cnt">${nt}</span><i class="bar" style="width:${100 * nt / tot}%"></i></div>
+          <div class="opt f disp ${Q.a ? "dim" : ""}">✘ Salah<span class="cnt">${nf}</span><i class="bar" style="width:${100 * nf / tot}%"></i></div></div>`;
+    } else if (state === "board") {
+      label = "Soalan seterusnya ▶";
+      const t = (game.top || []).slice(0, 5), mx = Math.max(1, ...t.map(x => x.score));
+      body = `<p class="eyebrow" style="font-size:1.3vw">Selepas ${q + 1} / ${N} soalan</p><h1 class="disp" style="font-size:5vw">Papan <span class="gold">kedudukan</span></h1>
+        <div style="display:flex;flex-direction:column;gap:1vw;flex:1;justify-content:center">${t.map((p, i) => `
+          <div class="lb-row" style="animation-delay:${i * .08}s"><span class="r">${i + 1}</span>
+            <div style="display:flex;flex-direction:column;gap:.5vw"><span>${esc(p.name)}</span><span style="display:block;height:.6vw;border-radius:.3vw;width:${Math.max(4, 100 * p.score / mx)}%;background:linear-gradient(90deg,var(--teal),var(--gold))"></span></div>
+            <span style="color:var(--gold)">${p.score}</span></div>`).join("") || `<p style="font-size:1.6vw;color:var(--soft)">Belum ada markah.</p>`}</div>`;
+    } else if (state === "end") {
+      label = "";
+      const t = game.top || [], P = [t[1], t[0], t[2]], H = ["16vw", "22vw", "12vw"], C = ["#C3CAE8", "#FFC23D", "#FF8A3D"], R = [2, 1, 3];
+      body = `<div style="text-align:center"><p class="eyebrow" style="font-size:1.3vw">Keputusan akhir</p><h1 class="disp" style="font-size:5vw">Tahniah, <span class="gold">juara!</span></h1></div>
+        <div class="podium">${P.map((p, i) => p ? `<div class="pod fade" style="animation-delay:${[.6, 1.2, 0][i]}s;animation-fill-mode:both"><p class="nm">${esc(p.name)}</p><p class="sc">${p.score} markah</p>
+          <div class="blk disp" style="height:${H[i]};background:${C[i]}">${R[i]}</div></div>` : `<div class="pod"></div>`).join("")}</div>
+        <p style="text-align:center;font-size:1.3vw;color:var(--soft)">${t.slice(3, 10).map((p, i) => `${i + 4}. ${esc(p.name)} (${p.score})`).join(" · ")}</p>`;
+    }
+    app.innerHTML = `${DEMO ? `<div class="banner">MOD DEMO — data hanya dalam pelayar ini. Isi firebaseConfig untuk acara sebenar.</div>` : ""}
+      <div class="h-wrap">${top}${body}</div>
+      <div class="h-ctrl"><button class="btn ghost" id="mu">${Music.muted ? "🔇" : "🔊"} Muzik</button>${state === "lobby" ? `<button class="btn ghost" id="ng">Permainan baharu</button>` : ""}${label ? `<button class="btn" id="nx">${label}</button>` : ""}</div>`;
+    const nx = document.getElementById("nx"); if (nx) nx.onclick = next;
+    const ng = document.getElementById("ng"); if (ng) ng.onclick = newGame;
+    document.getElementById("mu").onclick = e => { e.currentTarget.textContent = (Music.toggle() ? "🔇" : "🔊") + " Muzik"; };
+    if (state === "lobby") {
+      const box = document.getElementById("qr");
+      if (window.qrcode) { const qr = qrcode(0, "M"); qr.addData(joinUrl); qr.make(); box.innerHTML = qr.createSvgTag({ scalable: true, margin: 0 }); }
+      else box.innerHTML = `<img alt="Kod QR" src="https://api.qrserver.com/v1/create-qr-code/?size=600x600&margin=0&data=${encodeURIComponent(joinUrl)}">`;
+    }
+    if (state === "question") {
+      const t0 = game.qStart || Date.now();
+      const upd = () => {
+        const left = Math.max(0, Math.ceil(QUESTION_TIME - (Date.now() - t0) / 1000));
+        const el = document.getElementById("tm"); if (el) el.textContent = left;
+        if (left !== lastLeft) { if (left <= 5 && left > 0) Music.tick(left); if (left === 0 && lastLeft !== null) Music.timeUp(); lastLeft = left; }
+        const n = qAnswers(q).length, na = document.getElementById("na"); if (na) na.textContent = n;
+        if (left <= 0 || (players.length > 0 && n >= players.length)) { clearInterval(tick); if (game.state === "question" && game.q === q) next(); }
+      };
+      upd(); tick = setInterval(upd, 250);
+    }
+  }
+  A.watchGame(g, d => { if (d) { game = d; render(); } });
+  A.watchPlayers(g, p => { if (game?.state === "lobby" && p.length > players.length) Music.join(); players = p; if (game?.state === "lobby") render(); else { const s = document.querySelector(".h-top .eyebrow:last-child"); if (s) s.innerHTML = `KOD: <span style="color:var(--gold)">${g}</span> · ${players.length} peserta`; } });
+  A.watchAnswers(g, a => { answers = a; if (game?.state === "reveal") render(); });
+}
+
+/* ======================================================================
+   PLAYER
+   ====================================================================== */
+async function player(A) {
+  const banner = DEMO ? `<div class="banner">MOD DEMO</div>` : "";
+  let g = params.get("g");
+  if (!g) {
+    app.innerHTML = `${banner}<div class="p-wrap"><div class="p-center"><p class="eyebrow">${esc(SUBTITLE)}</p>
+      <h1 class="disp" style="font-size:52px">${esc(TITLE.split(" ")[0])} <span class="gold">${esc(TITLE.split(" ").slice(1).join(" "))}</span></h1>
+      <input id="code" inputmode="numeric" maxlength="6" placeholder="Kod permainan"><button class="btn" id="go" style="width:100%">Seterusnya</button></div></div>`;
+    await new Promise(res => { const go = () => { const v = document.getElementById("code").value.trim(); if (v) { g = v; res(); } }; document.getElementById("go").onclick = go; document.getElementById("code").onkeydown = e => e.key === "Enter" && go(); });
+    history.replaceState(null, "", `?g=${g}${params.has("demo") ? "&demo" : ""}`);
+  }
+  const KP = `kuiz:${g}:${params.get("slot") || ""}`;
+  let pid = localStorage.getItem(KP + "pid"), name = localStorage.getItem(KP + "name");
+  const ans = JSON.parse(localStorage.getItem(KP + "ans") || "{}");
+  const seen = {};
+  const saveAns = () => localStorage.setItem(KP + "ans", JSON.stringify(ans));
+  const total = () => Object.values(ans).reduce((s, a) => s + (a.points || 0), 0);
+
+  if (!(await A.getGame(g))) {
+    app.innerHTML = `${banner}<div class="p-wrap"><div class="p-center"><div class="big-ic" style="background:rgba(255,77,94,.2);color:var(--red)">!</div>
+      <h2 class="disp" style="font-size:40px">Kod tidak dijumpai</h2><p style="color:var(--soft)">Semak kod ${esc(g)} pada skrin.</p>
+      <button class="btn" onclick="location.href=location.pathname">Cuba lagi</button></div></div>`;
+    return;
+  }
+  if (!pid || !name) {
+    app.innerHTML = `${banner}<div class="p-wrap"><div class="p-center"><p class="eyebrow">Kod ${esc(g)}</p>
+      <h1 class="disp" style="font-size:48px">Siapa <span class="gold">nama anda?</span></h1>
+      <input id="nm" maxlength="18" placeholder="Nama panggilan" autocomplete="off"><button class="btn" id="go" style="width:100%">Sertai ▶</button>
+      <p style="font-size:13px;color:var(--soft)">Nama akan dipaparkan pada skrin besar.</p></div></div>`;
+    await new Promise(res => {
+      const go = async () => {
+        const v = document.getElementById("nm").value.trim().replace(/\s+/g, " ");
+        if (v.length < 2) return;
+        name = v; pid = Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+        document.getElementById("go").disabled = true; document.getElementById("go").textContent = "Menyambung…";
+        for (let i = 0; i < 5; i++) { try { await A.addPlayer(g, pid, { name, joined: Date.now() }); break; } catch (e) { await sleep(600 * (i + 1) + Math.random() * 600); } }
+        localStorage.setItem(KP + "pid", pid); localStorage.setItem(KP + "name", name); res();
+      };
+      document.getElementById("go").onclick = go; document.getElementById("nm").onkeydown = e => e.key === "Enter" && go();
+    });
+  }
+  try { await navigator.wakeLock?.request("screen"); } catch (e) {}
+
+  let game = null, tick = null;
+  async function submit(choice) {
+    const q = game.q; if (ans[q]) return;
+    const el = Date.now() - (seen[q] || Date.now()), Q = QUESTIONS[q], correct = choice === Q.a;
+    const points = correct ? Math.round(500 + 500 * Math.max(0, 1 - el / (QUESTION_TIME * 1000))) : 0;
+    ans[q] = { choice, correct, points }; saveAns(); navigator.vibrate?.(40); render();
+    const d = { q, pid, name, choice, correct, points, ms: el };
+    for (let i = 0; i < 6; i++) { try { await A.addAnswer(g, `${q}_${pid}`, d); break; } catch (e) { await sleep(500 * (i + 1) + Math.random() * 800); } }
+  }
+  function render() {
+    clearInterval(tick);
+    if (!game) return;
+    const { state, q } = game, Q = QUESTIONS[q], a = ans[q];
+    const head = `<div class="p-head"><span>👤 <b>${esc(name)}</b></span><span>Markah: <b style="color:var(--gold)">${total()}</b></span></div>`;
+    let body = "";
+    if (state === "lobby") {
+      body = `<div class="p-center"><div class="big-ic" style="background:rgba(63,224,208,.18);color:var(--teal)">✔</div>
+        <h2 class="disp" style="font-size:44px">Anda sudah <span class="gold">masuk!</span></h2><p style="color:var(--soft)">Lihat nama anda di skrin besar.<br>Tunggu hos memulakan kuiz.</p></div>`;
+    } else if (state === "question" && !a) {
+      if (!seen[q]) seen[q] = Date.now();
+      body = `<p class="eyebrow">Kenyataan ${q + 1} / ${N}</p><p class="stmt-p">“${esc(Q.t)}”</p>
+        <div class="tbar"><i id="tb" style="width:100%"></i></div>
+        <button class="ans t disp" data-c="1">✔ Betul<small>FAKTA</small></button>
+        <button class="ans f disp" data-c="0">✘ Salah<small>MITOS</small></button>`;
+    } else if (state === "question" && a) {
+      body = `<div class="p-center"><div class="big-ic" style="background:rgba(255,194,61,.18);color:var(--gold)">⏳</div>
+        <h2 class="disp" style="font-size:40px">Jawapan <span class="gold">dihantar</span></h2><p style="color:var(--soft)">Anda pilih <b style="color:${a.choice ? "var(--teal)" : "var(--orange)"}">${a.choice ? "BETUL" : "SALAH"}</b>. Tunggu keputusan…</p></div>`;
+    } else if (state === "reveal") {
+      const ok = a?.correct;
+      body = `<div class="p-center"><div class="big-ic" style="background:${!a ? "rgba(255,255,255,.1)" : ok ? "rgba(61,220,132,.2)" : "rgba(255,77,94,.2)"};color:${!a ? "var(--soft)" : ok ? "var(--green)" : "var(--red)"}">${!a ? "…" : ok ? "✔" : "✘"}</div>
+        <h2 class="disp" style="font-size:46px">${!a ? "Tidak sempat" : ok ? `<span class="gold">Tepat!</span>` : "Kurang tepat"}</h2>
+        ${a ? `<p class="disp" style="font-size:34px;color:var(--gold)">+${a.points}</p>` : ""}
+        <p style="color:var(--soft);font-size:15px;line-height:1.5">Jawapan: <b style="color:${Q.a ? "var(--teal)" : "var(--orange)"}">${Q.a ? "BETUL · FAKTA" : "SALAH · MITOS"}</b><br>${esc(Q.e)}</p></div>`;
+    } else if (state === "board" || state === "end") {
+      const r = game.ranks?.[pid];
+      body = `<div class="p-center"><p class="eyebrow">${state === "end" ? "Keputusan akhir" : "Kedudukan semasa"}</p>
+        <h2 class="disp" style="font-size:96px"><span class="gold">${r ? "#" + r : "—"}</span></h2>
+        <p style="color:var(--soft)">${r ? `daripada ${game.total} peserta` : "Kedudukan belum tersedia"}</p>
+        <p class="disp" style="font-size:36px">${total()} markah</p>
+        ${state === "end" ? `<p style="color:var(--soft);line-height:1.5">Terima kasih kerana menyertai!<br>Ingat: <b style="color:var(--gold)">Talian HEAL 15555</b></p>` : `<p style="color:var(--soft)">Bersedia untuk soalan seterusnya…</p>`}</div>`;
+    }
+    app.innerHTML = `${banner}<div class="p-wrap">${head}${body}</div>`;
+    app.querySelectorAll(".ans").forEach(b => b.onclick = () => submit(b.dataset.c === "1"));
+    if (state === "question" && !a) {
+      tick = setInterval(() => { const tb = document.getElementById("tb"); if (tb) tb.style.width = Math.max(0, 100 - 100 * (Date.now() - seen[q]) / (QUESTION_TIME * 1000)) + "%"; }, 250);
+    }
+  }
+  A.watchGame(g, d => { if (d) { game = d; render(); } });
+}
+
+/* ---------- boot ---------- */
+(async () => {
+  let A;
+  try { A = DEMO ? localAdapter() : await firebaseAdapter(); }
+  catch (e) { app.innerHTML = `<div class="p-wrap"><div class="p-center"><h2 class="disp" style="font-size:36px">Gagal menyambung</h2><p style="color:var(--soft)">Semak sambungan internet dan cuba semula.</p><button class="btn" onclick="location.reload()">Muat semula</button></div></div>`; console.error(e); return; }
+  IS_HOST ? host(A) : player(A);
+})();
+</script>
+</body>
+</html>
