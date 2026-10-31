@@ -285,9 +285,11 @@ async function host(AP) {
   let game = null, players = [], answers = [], tick = null, busy = false;
 
   const setState = async d => { if (busy) return; busy = true; try { await A.setGame(g, d); } finally { busy = false; } };
-  const qAnswers = q => answers.filter(a => a.q === q);
+  const round = () => game?.round || 1;
+  const rAnswers = () => answers.filter(a => (a.round || 1) === round());
+  const qAnswers = q => rAnswers().filter(a => a.q === q);
   const ranksPayload = () => {
-    const t = scoreTable(players, answers), ranks = {};
+    const t = scoreTable(players, rAnswers()), ranks = {};
     t.forEach((p, i) => ranks[p.id] = i + 1);
     return { ranks, total: t.length, top: t.slice(0, 10).map(p => ({ name: p.name, score: p.score })) };
   };
@@ -295,10 +297,16 @@ async function host(AP) {
     if (!game) return;
     const { state, q } = game;
     if (state === "lobby") return setState({ state: "question", q: 0, qStart: Date.now() });
-    if (state === "question") return setState({ state: "reveal" });
+    if (state === "question") return setState({ state: "closed" });
+    if (state === "closed") return setState({ state: "reveal" });
     if (state === "reveal") return setState({ state: q >= N - 1 ? "end" : "board", ...ranksPayload() });
     if (state === "board") return setState({ state: "question", q: q + 1, qStart: Date.now() });
   }
+  async function restart() {
+    if (!confirm("Main semula dengan peserta yang sama? Markah akan bermula dari kosong.")) return;
+    await setState({ state: "lobby", q: -1, round: round() + 1, ranks: {}, top: [], total: 0 });
+  }
+  async function finish() { await setState({ state: "finish" }); }
   async function newGame() {
     if (!confirm("Mula permainan baharu dengan kod baharu?")) return;
     location.href = `${base}?host${params.has("demo") ? "&demo" : ""}`;
@@ -311,11 +319,13 @@ async function host(AP) {
   });
   let lastKey = null, lastLeft = null;
   function sound() {
-    const key = game.state + ":" + game.q; if (key === lastKey) return;
+    const key = game.state + ":" + game.q + ":" + (game.round || 1); if (key === lastKey) return;
     const prev = lastKey; lastKey = key;
     if (game.state === "lobby") Music.play("lobby");
     else if (game.state === "question") { lastLeft = null; Music.play("question"); }
+    else if (game.state === "closed") { Music.stop(); if (prev) Music.timeUp(); }
     else if (game.state === "reveal") { Music.stop(); if (prev) Music.reveal(); }
+    else if (game.state === "finish") { Music.play("lobby"); }
     else if (game.state === "board") { Music.stop(); if (prev) Music.board(); }
     else if (game.state === "end") { Music.stop(); if (prev) { Music.fanfare(); setTimeout(() => game.state === "end" && Music.play("lobby"), 2600); } }
   }
@@ -352,6 +362,19 @@ async function host(AP) {
         <div style="flex:1"></div>
         <p style="font-size:1.6vw;font-weight:800;color:var(--soft)"><span style="color:var(--gold)" id="na">${n}</span> / ${players.length} telah menjawab</p>
         <div class="opts"><div class="opt t disp">✔ Betul</div><div class="opt f disp">✘ Salah</div></div>`;
+    } else if (state === "closed") {
+      label = "Papar jawapan ▶";
+      const qa = qAnswers(q), nt = qa.filter(a => a.choice === true).length, nf = qa.filter(a => a.choice === false).length, tot = Math.max(1, qa.length);
+      body = `<div style="display:flex;flex-direction:column;gap:1vw"><p class="eyebrow" style="font-size:1.3vw;color:var(--orange)">Masa tamat · Kenyataan ${q + 1} / ${N}</p>
+          <h1 class="disp" style="font-size:4vw;line-height:1.02">“${esc(Q.t)}”</h1></div>
+        <div class="card fade" style="padding:1.6vw 2.4vw;display:flex;gap:1.6vw;align-items:center">
+          <p class="disp gold" style="font-size:3.4vw;white-space:nowrap">Apa pendapat anda?</p>
+          <p style="font-size:1.6vw;line-height:1.45;color:var(--soft)">Jawapan belum didedahkan. Kenapa anda memilih jawapan itu?</p></div>
+        <div style="flex:1"></div>
+        <p style="font-size:1.6vw;font-weight:800;color:var(--soft)"><span style="color:var(--gold)">${qa.length}</span> / ${players.length} telah menjawab</p>
+        <div class="opts">
+          <div class="opt t disp">✔ Betul<span class="cnt">${nt}</span><i class="bar" style="width:${100 * nt / tot}%"></i></div>
+          <div class="opt f disp">✘ Salah<span class="cnt">${nf}</span><i class="bar" style="width:${100 * nf / tot}%"></i></div></div>`;
     } else if (state === "reveal") {
       label = q >= N - 1 ? "Keputusan akhir ▶" : "Kedudukan ▶";
       const qa = qAnswers(q), nt = qa.filter(a => a.choice === true).length, nf = qa.filter(a => a.choice === false).length, tot = Math.max(1, qa.length);
@@ -374,6 +397,13 @@ async function host(AP) {
           <div class="lb-row" style="animation-delay:${i * .08}s"><span class="r">${i + 1}</span>
             <div style="display:flex;flex-direction:column;gap:.5vw"><span>${esc(p.name)}</span><span style="display:block;height:.6vw;border-radius:.3vw;width:${Math.max(4, 100 * p.score / mx)}%;background:linear-gradient(90deg,var(--teal),var(--gold))"></span></div>
             <span style="color:var(--gold)">${p.score}</span></div>`).join("") || `<p style="font-size:1.6vw;color:var(--soft)">Belum ada markah.</p>`}</div>`;
+    } else if (state === "finish") {
+      label = "";
+      body = `<div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:1.6vw">
+        <p class="eyebrow" style="font-size:1.3vw">Permainan tamat</p>
+        <h1 class="disp" style="font-size:7vw">Terima <span class="gold">kasih!</span></h1>
+        <p style="font-size:1.8vw;color:var(--soft);max-width:60vw;line-height:1.5">Kesihatan mental milik semua. Jika anda atau sesiapa memerlukan sokongan, hubungi</p>
+        <p class="disp gold" style="font-size:6vw">Talian HEAL 15555</p></div>`;
     } else if (state === "end") {
       label = "";
       const t = game.top || [], P = [t[1], t[0], t[2]], H = ["16vw", "22vw", "12vw"], C = ["#C3CAE8", "#FFC23D", "#FF8A3D"], R = [2, 1, 3];
@@ -384,9 +414,11 @@ async function host(AP) {
     }
     app.innerHTML = `${DEMO ? `<div class="banner">MOD DEMO — data hanya dalam pelayar ini. Isi firebaseConfig untuk acara sebenar.</div>` : ""}
       <div class="h-wrap">${top}${body}</div>
-      <div class="h-ctrl"><button class="btn ghost" id="mu">${Music.muted ? "🔇" : "🔊"} Muzik</button>${state === "lobby" ? `<button class="btn ghost" id="ng">Permainan baharu</button>` : ""}${label ? `<button class="btn" id="nx">${label}</button>` : ""}</div>`;
+      <div class="h-ctrl"><button class="btn ghost" id="mu">${Music.muted ? "🔇" : "🔊"} Muzik</button>${state === "lobby" || state === "finish" ? `<button class="btn ghost" id="ng">Permainan baharu (kod baharu)</button>` : ""}${state === "end" || state === "finish" ? `<button class="btn ghost" id="rs" style="opacity:1;font-size:1.1vw;padding:.9vw 1.4vw">↻ Main semula</button>` : ""}${state === "end" ? `<button class="btn" id="fn">Tamat permainan ■</button>` : ""}${label ? `<button class="btn" id="nx">${label}</button>` : ""}</div>`;
     const nx = document.getElementById("nx"); if (nx) nx.onclick = next;
     const ng = document.getElementById("ng"); if (ng) ng.onclick = newGame;
+    const rs = document.getElementById("rs"); if (rs) rs.onclick = restart;
+    const fn = document.getElementById("fn"); if (fn) fn.onclick = finish;
     document.getElementById("mu").onclick = e => { e.currentTarget.textContent = (Music.toggle() ? "🔇" : "🔊") + " Muzik"; };
     if (state === "lobby") {
       const box = document.getElementById("qr");
@@ -398,7 +430,7 @@ async function host(AP) {
       const upd = () => {
         const left = Math.max(0, Math.ceil(QUESTION_TIME - (Date.now() - t0) / 1000));
         const el = document.getElementById("tm"); if (el) el.textContent = left;
-        if (left !== lastLeft) { if (left <= 5 && left > 0) Music.tick(left); if (left === 0 && lastLeft !== null) Music.timeUp(); lastLeft = left; }
+        if (left !== lastLeft) { if (left <= 5 && left > 0) Music.tick(left); lastLeft = left; }
         const n = qAnswers(q).length, na = document.getElementById("na"); if (na) na.textContent = n;
         if (left <= 0 || (players.length > 0 && n >= players.length)) { clearInterval(tick); if (game.state === "question" && game.q === q) next(); }
       };
@@ -407,7 +439,7 @@ async function host(AP) {
   }
   A.watchGame(g, d => { if (d) { game = d; render(); } });
   A.watchPlayers(g, p => { if (game?.state === "lobby" && p.length > players.length) Music.join(); players = p; if (game?.state === "lobby") render(); else { const s = document.querySelector(".h-top .eyebrow:last-child"); if (s) s.innerHTML = `KOD: <span style="color:var(--gold)">${g}</span> · ${players.length} peserta`; } });
-  A.watchAnswers(g, a => { answers = a; if (game?.state === "reveal") render(); });
+  A.watchAnswers(g, a => { answers = a; if (game?.state === "reveal" || game?.state === "closed") render(); });
 }
 
 /* ======================================================================
@@ -427,9 +459,9 @@ async function player(AP) {
   try { A = await AP; } catch (e) { return showError(e, "muat Firebase"); }
   const KP = `kuiz:${g}:${params.get("slot") || ""}`;
   let pid = localStorage.getItem(KP + "pid"), name = localStorage.getItem(KP + "name");
-  const ans = JSON.parse(localStorage.getItem(KP + "ans") || "{}");
+  let curRound = 1, ans = JSON.parse(localStorage.getItem(KP + "ans:1") || "{}");
   const seen = {};
-  const saveAns = () => localStorage.setItem(KP + "ans", JSON.stringify(ans));
+  const saveAns = () => localStorage.setItem(KP + "ans:" + curRound, JSON.stringify(ans));
   const total = () => Object.values(ans).reduce((s, a) => s + (a.points || 0), 0);
 
   let exists;
@@ -462,23 +494,25 @@ async function player(AP) {
   let game = null, tick = null;
   async function submit(choice) {
     const q = game.q; if (ans[q]) return;
-    const el = Date.now() - (seen[q] || Date.now()), Q = QUESTIONS[q], correct = choice === Q.a;
+    const el = Date.now() - (seen[curRound + "_" + q] || Date.now()), Q = QUESTIONS[q], correct = choice === Q.a;
     const points = correct ? Math.round(500 + 500 * Math.max(0, 1 - el / (QUESTION_TIME * 1000))) : 0;
     ans[q] = { choice, correct, points }; saveAns(); navigator.vibrate?.(40); render();
-    const d = { q, pid, name, choice, correct, points, ms: el };
-    for (let i = 0; i < 6; i++) { try { await A.addAnswer(g, `${q}_${pid}`, d); break; } catch (e) { await sleep(500 * (i + 1) + Math.random() * 800); } }
+    const d = { q, round: curRound, pid, name, choice, correct, points, ms: el };
+    for (let i = 0; i < 6; i++) { try { await A.addAnswer(g, `${curRound}_${q}_${pid}`, d); break; } catch (e) { await sleep(500 * (i + 1) + Math.random() * 800); } }
   }
   function render() {
     clearInterval(tick);
     if (!game) return;
-    const { state, q } = game, Q = QUESTIONS[q], a = ans[q];
+    const { state, q } = game, Q = QUESTIONS[q];
+    if ((game.round || 1) !== curRound) { curRound = game.round || 1; ans = JSON.parse(localStorage.getItem(KP + "ans:" + curRound) || "{}"); }
+    const a = ans[q], sk = curRound + "_" + q;
     const head = `<div class="p-head"><span>👤 <b>${esc(name)}</b></span><span>Markah: <b style="color:var(--gold)">${total()}</b></span></div>`;
     let body = "";
     if (state === "lobby") {
       body = `<div class="p-center"><div class="big-ic" style="background:rgba(63,224,208,.18);color:var(--teal)">✔</div>
-        <h2 class="disp" style="font-size:44px">Anda sudah <span class="gold">masuk!</span></h2><p style="color:var(--soft)">Lihat nama anda di skrin besar.<br>Tunggu hos memulakan kuiz.</p></div>`;
+        <h2 class="disp" style="font-size:44px">${curRound > 1 ? `Pusingan <span class="gold">baharu!</span>` : `Anda sudah <span class="gold">masuk!</span>`}</h2><p style="color:var(--soft)">Lihat nama anda di skrin besar.<br>Tunggu hos memulakan kuiz.</p></div>`;
     } else if (state === "question" && !a) {
-      if (!seen[q]) seen[q] = Date.now();
+      if (!seen[sk]) seen[sk] = Date.now();
       body = `<p class="eyebrow">Kenyataan ${q + 1} / ${N}</p><p class="stmt-p">“${esc(Q.t)}”</p>
         <div class="tbar"><i id="tb" style="width:100%"></i></div>
         <button class="ans t disp" data-c="1">✔ Betul<small>FAKTA</small></button>
@@ -486,6 +520,13 @@ async function player(AP) {
     } else if (state === "question" && a) {
       body = `<div class="p-center"><div class="big-ic" style="background:rgba(255,194,61,.18);color:var(--gold)">⏳</div>
         <h2 class="disp" style="font-size:40px">Jawapan <span class="gold">dihantar</span></h2><p style="color:var(--soft)">Anda pilih <b style="color:${a.choice ? "var(--teal)" : "var(--orange)"}">${a.choice ? "BETUL" : "SALAH"}</b>. Tunggu keputusan…</p></div>`;
+    } else if (state === "closed") {
+      body = `<div class="p-center"><div class="big-ic" style="background:rgba(255,138,61,.18);color:var(--orange)">⏱</div>
+        <h2 class="disp" style="font-size:44px">Masa <span class="gold">tamat</span></h2>
+        <p style="color:var(--soft);line-height:1.5">${a ? `Jawapan anda: <b style="color:${a.choice ? "var(--teal)" : "var(--orange)"}">${a.choice ? "BETUL" : "SALAH"}</b><br>` : "Anda tidak sempat menjawab.<br>"}Lihat skrin besar — jawapan akan didedahkan sebentar lagi.</p></div>`;
+    } else if (state === "finish") {
+      body = `<div class="p-center"><p class="eyebrow">Permainan tamat</p><h2 class="disp" style="font-size:52px">Terima <span class="gold">kasih!</span></h2>
+        <p style="color:var(--soft);line-height:1.5">Kesihatan mental milik semua.<br>Perlukan sokongan? Hubungi</p><p class="disp gold" style="font-size:40px">Talian HEAL 15555</p></div>`;
     } else if (state === "reveal") {
       const ok = a?.correct;
       body = `<div class="p-center"><div class="big-ic" style="background:${!a ? "rgba(255,255,255,.1)" : ok ? "rgba(61,220,132,.2)" : "rgba(255,77,94,.2)"};color:${!a ? "var(--soft)" : ok ? "var(--green)" : "var(--red)"}">${!a ? "…" : ok ? "✔" : "✘"}</div>
@@ -503,7 +544,7 @@ async function player(AP) {
     app.innerHTML = `${banner}<div class="p-wrap">${head}${body}</div>`;
     app.querySelectorAll(".ans").forEach(b => b.onclick = () => submit(b.dataset.c === "1"));
     if (state === "question" && !a) {
-      tick = setInterval(() => { const tb = document.getElementById("tb"); if (tb) tb.style.width = Math.max(0, 100 - 100 * (Date.now() - seen[q]) / (QUESTION_TIME * 1000)) + "%"; }, 250);
+      tick = setInterval(() => { const tb = document.getElementById("tb"); if (tb) tb.style.width = Math.max(0, 100 - 100 * (Date.now() - seen[sk]) / (QUESTION_TIME * 1000)) + "%"; }, 250);
     }
   }
   A.watchGame(g, d => { if (d) { game = d; render(); } });
